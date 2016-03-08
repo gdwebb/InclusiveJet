@@ -106,6 +106,7 @@ Int_t StInclusiveJetMaker::Init(){
   pjetEvent = 0;
   skimEvent =0;
   ueEvent_transP = 0; ueEvent_transM = 0;
+  pueEvent_transP = 0; pueEvent_transM = 0;
   // Data and Embedding have Jet Trees and Skim Trees. Jets created from the pythia.root files only have jet trees and no skim Trees
   // The goal is to make this code versitle to take also take Pythia jets as input. So if we are using pythia jet trees mIsPythia == 1 
   if(mIsPythia == 0){
@@ -115,8 +116,12 @@ Int_t StInclusiveJetMaker::Init(){
     mUeChain->SetBranchAddress("transP_AntiKtR060NHits12", &ueEvent_transP);
     cout << "CHECK! " <<endl; 
     cout << "mUeChain: " << mUeChain->GetEntries() << " mjetChain:" << mjetChain->GetEntries() ;
-
-    if(mIsEmbed == 1){  mjetChain->SetBranchAddress("AntiKtR060Particle",&pjetEvent);}
+    
+    if(mIsEmbed == 1){ 
+      mjetChain->SetBranchAddress("AntiKtR060Particle",&pjetEvent);
+      mUeChain->SetBranchAddress("transM_AntiKtR060Particle", &pueEvent_transM);
+      mUeChain->SetBranchAddress("transP_AntiKtR060Particle", &pueEvent_transP);
+    }
     
   }
   else{
@@ -182,6 +187,8 @@ Int_t StInclusiveJetMaker::Make(){
   jets_particle.Rt = 0;
   jets_particle.Et = -1;
   jets_particle.area = -1;
+  jets_particle.ueDensity = -1;
+  jets_particle.corr_pT = -1;
   jets_particle.sumtrackpT = -1;
   jets_particle.sumtowerEt = -1;
   jets_particle.detEta = -100;
@@ -206,8 +213,7 @@ Int_t StInclusiveJetMaker::Make(){
     if(!jetEvent) return kStOK;
     if(!skimEvent) return kStOK;
     // Enforce event synchronization
-    cout <<  jetEvent->eventId() << " "  << ueEvent_transM->eventId() << " " << ueEvent_transP->eventId() << " Checking theses numbers match" <<  endl;
-    assert(jetEvent->runId() == skimEvent->runId() && jetEvent->eventId() == skimEvent->eventId());   
+    assert(jetEvent->runId() == skimEvent->runId() && jetEvent->eventId() == skimEvent->eventId() && jetEvent->eventId() == ueEvent_transP->eventId() );   
     event.eventId = jetEvent->eventId();
     
     //     JP1 trigger
@@ -364,6 +370,8 @@ Int_t StInclusiveJetMaker::Make(){
 		  jets_particle.y = 0.5*TMath::Log( (pjet->E() + pjet->pz()) / (pjet->E() - pjet->pz()) );
 		  jets_particle.Rt = pjet->rt();
 		  jets_particle.area = pjet->area();
+		  jets_particle.ueDensity = (pueEvent_transM->sumPt() + pueEvent_transP->sumPt())/regionUEarea;
+		  jets_particle.corr_pT = jets_particle.pT - (jets_particle.ueDensity * jets_particle.area);
 		  jets_particle.Et = pjet->E()/cosh(pjet->eta());
 		  jets_particle.sumtrackpT = pjet->sumTrackPt();
 		  jets_particle.sumtowerEt = pjet->sumTowerPt();
@@ -424,6 +432,9 @@ Int_t StInclusiveJetMaker::Make(){
   	    jets.phi = jethold->phi();
   	    jets.y = 0.5*TMath::Log( (jethold->E() + jethold->pz()) / (jethold->E() - jethold->pz()) );
   	    jets.Rt = jethold->rt();
+	    jets.area = jethold->area();
+	    jets.ueDensity = (ueEvent_transM->sumPt() + ueEvent_transP->sumPt())/regionUEarea;
+	    jets.corr_pT = jets.pT - (jets.ueDensity * jets.area);
   	    jets.Et = jethold->E()/cosh(jethold->eta());
   	    jets.sumtrackpT = jethold->sumTrackPt();
   	    jets.sumtowerEt = jethold->sumTowerPt();

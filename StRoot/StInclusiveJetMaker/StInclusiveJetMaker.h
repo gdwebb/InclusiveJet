@@ -59,6 +59,7 @@ class StInclusiveJetMaker : public StMaker {
   StJetEvent* jetEvent, *pjetEvent;
   StJetSkimEvent* skimEvent;
   StUeEvent *ueEvent_transP, *ueEvent_transM;
+  StUeEvent *pueEvent_transP, *pueEvent_transM;
   StJetTrack * jtrack;
   StJetTower *jtower;
   StJetVertex* vertex, *pvertex;
