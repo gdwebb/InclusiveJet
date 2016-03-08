@@ -17,37 +17,9 @@ void RunInclusiveJetCode(int nentries = 1e3,
   cout << "outfile = " << outfile << endl;
 
   // Load libraries
-   gROOT->Macro("loadMuDst.C");
-  // gSystem->Load("StDetectorDbMaker");
-  // gSystem->Load("StTpcDb");
-  // gSystem->Load("StDbUtilities");
-  // gSystem->Load("StRandomSelector");
-  // gSystem->Load("StMcEvent");
-  // gSystem->Load("StMcEventMaker");
-  // gSystem->Load("StDaqLib");
-  // gSystem->Load("StEmcRawMaker");
-  // gSystem->Load("StEmcADCtoEMaker");
-  // gSystem->Load("StEpcMaker");
-  // gSystem->Load("StEmcSimulatorMaker");
-  // gSystem->Load("StDbBroker");
-  // gSystem->Load("St_db_Maker");
-  // gSystem->Load("StEEmcUtil");
-  // gSystem->Load("StEEmcDbMaker");
-  // gSystem->Load("StSpinDbMaker");
-  // gSystem->Load("StEmcTriggerMaker");
-  // gSystem->Load("StTriggerUtilities");
-  // gSystem->Load("StMCAsymMaker");
-  // gSystem->Load("libfastjet.so");
-  // gSystem->Load("libsiscone.so");
-  // gSystem->Load("libsiscone_spherical.so");
-  // gSystem->Load("libfastjetplugins.so");
+  gROOT->Macro("loadMuDst.C");
   gSystem->Load("StJetEvent"); 
-  // gSystem->Load("StJetFinder");
   gSystem->Load("StJetSkimEvent");
-  //  gSystem->Load("StJets");
-  //  gSystem->Load("StUeEvent"); 
-  //gSystem->Load("StJetMaker");
-  
   gSystem->Load("StInclusiveJetMaker");
 
   chain = new StChain("StChain");
