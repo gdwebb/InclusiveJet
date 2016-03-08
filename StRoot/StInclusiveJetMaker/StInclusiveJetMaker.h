@@ -20,6 +20,7 @@
 
 class StJetCandidate;
 class StJetEvent;
+class StUeEvent;
 class StJetSkimEvent;
 class StJetTrack;
 class StJetTower;
@@ -43,7 +44,7 @@ class StInclusiveJetMaker : public StMaker {
   // Protected method if any
 
  public: 
-  StInclusiveJetMaker(const char *name,const char *jetBranchname, TChain *jetChain, TChain* skimChain, int isEmbed, int isPythia, const char *outputfile);
+  StInclusiveJetMaker(const char *name,const char *jetBranchname, TChain *jetChain, TChain* skimChain, TChain* ueChain, int isEmbed, int isPythia, const char *outputfile);
   virtual       ~StInclusiveJetMaker();
   virtual Int_t Init();
   virtual Int_t  Make();
@@ -52,10 +53,12 @@ class StInclusiveJetMaker : public StMaker {
   
   TChain* mjetChain; 
   TChain* mskimChain;
+  TChain* mUeChain;
   const char *mjetname;
   int mIsEmbed,mIsPythia;
   StJetEvent* jetEvent, *pjetEvent;
   StJetSkimEvent* skimEvent;
+  StUeEvent *ueEvent_transP, *ueEvent_transM;
   StJetTrack * jtrack;
   StJetTower *jtower;
   StJetVertex* vertex, *pvertex;
@@ -77,7 +80,7 @@ class StInclusiveJetMaker : public StMaker {
 
   struct protoDijet {
     
-    float pT, eta, phi, Rt, Et, sumtrackpT, sumtowerEt, detEta,dR, y;
+    float pT, corr_pT,eta, phi, Rt, Et, sumtrackpT, sumtowerEt, detEta,dR, y, area, ueDensity;
     int numtracks, numtowers, eventId, geoFlagJP1, geoFlagJP2, geoFlagAdj;
     
   } jets,jets_particle ;
@@ -99,7 +102,7 @@ class StInclusiveJetMaker : public StMaker {
   Bool_t matchedToJetPatch(const StJetCandidate *jet, const map<int,int>& barrelJetPatches);
   Bool_t matchedToAdjacentJetPatch(const StJetCandidate *jet, const map<int,int>& barrelJetPatches);
   Bool_t CheckAdjacent(Int_t jpID[], Int_t num, Double_t aveEta, Double_t avePhi, const StJetCandidate *jettest);
-  float dphi, dphiNoSort,deta;
+  float dphi, dphiNoSort,deta, regionUEarea;
   Int_t numEntries;
   /// Displayed on session exit, leave it as-is please ...
   /* virtual const char *GetCVS() const { */

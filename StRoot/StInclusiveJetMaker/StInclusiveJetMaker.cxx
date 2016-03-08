@@ -52,8 +52,8 @@
 #include "StMessMgr.h"
 
 // StSpinPool
-#include "StSpinPool/StJets/StJet.h"
-#include "StSpinPool/StJets/StJets.h"
+//#include "StSpinPool/StJets/StJet.h"
+//#include "StSpinPool/StJets/StJets.h"
 #include "StSpinPool/StJetSkimEvent/StJetSkimEvent.h"
 #include "StSpinPool/StJetSkimEvent/StPythiaEvent.h"
 #include "StSpinPool/StJetEvent/StJetEvent.h"
@@ -74,7 +74,7 @@ ClassImp(StInclusiveJetMaker)
   See <A HREF="http://root.cern.ch/root/Documentation.html"> ROOT HTML documentation </A>
 
  */
-  StInclusiveJetMaker::StInclusiveJetMaker(const char *name, const char *jetBranchname, TChain* jetChain, TChain *skimChain, int isEmbed, int isPythia, const char* outputname):StMaker(name), mjetChain(jetChain), mskimChain(skimChain), mjetname(jetBranchname), mIsEmbed(isEmbed), mIsPythia(isPythia){
+StInclusiveJetMaker::StInclusiveJetMaker(const char *name, const char *jetBranchname, TChain* jetChain, TChain *skimChain, TChain *ueChain, int isEmbed, int isPythia, const char* outputname):StMaker(name), mjetChain(jetChain), mskimChain(skimChain), mUeChain(ueChain), mjetname(jetBranchname), mIsEmbed(isEmbed), mIsPythia(isPythia){
     myDijetfile = TString(outputname);
 }
 
@@ -101,23 +101,30 @@ Int_t StInclusiveJetMaker::Init(){
   // Create tables
   // Create Histograms
   outfile = new TFile(myDijetfile,"recreate");
- 
+  regionUEarea = 4*TMath::Pi()/3.0;
   jetEvent = 0;
   pjetEvent = 0;
   skimEvent =0;
+  ueEvent_transP = 0; ueEvent_transM = 0;
   // Data and Embedding have Jet Trees and Skim Trees. Jets created from the pythia.root files only have jet trees and no skim Trees
   // The goal is to make this code versitle to take also take Pythia jets as input. So if we are using pythia jet trees mIsPythia == 1 
   if(mIsPythia == 0){
     mjetChain->SetBranchAddress("AntiKtR060NHits12", &jetEvent);
-    if(mIsEmbed == 1){  mjetChain->SetBranchAddress("AntiKtR060Particle",&pjetEvent);}
     mskimChain->SetBranchAddress("skimEventBranch", &skimEvent);
+    mUeChain->SetBranchAddress("transM_AntiKtR060NHits12", &ueEvent_transM);
+    mUeChain->SetBranchAddress("transP_AntiKtR060NHits12", &ueEvent_transP);
+    cout << "CHECK! " <<endl; 
+    cout << "mUeChain: " << mUeChain->GetEntries() << " mjetChain:" << mjetChain->GetEntries() ;
+
+    if(mIsEmbed == 1){  mjetChain->SetBranchAddress("AntiKtR060Particle",&pjetEvent);}
+    
   }
   else{
     mjetChain->SetBranchAddress("AntiKtR060Particle", &jetEvent); 
   }
   inclujetTree = new TTree(Form("Inclujets_%s",mjetname),Form("Inclujets_%s",mjetname));
-  inclujetTree->Branch("jets",&jets,"pT/F:eta:phi:Rt:Et:sumtrackpT:sumtowerEt:detEta:dR:y:numtracks/I:numtowers:eventId:geoFlagJP1:geoFlagJP2:geoFlagAdj"); 
-  inclujetTree->Branch("jets_particle",&jets_particle,"pT/F:eta:phi:Rt:Et:sumtrackpT:sumtowerEt:detEta:dR:y:numtracks/I:numtowers:eventId:geoFlagJP1:geoFlagJP2:geoFlagAdj"); 
+  inclujetTree->Branch("jets",&jets,"pT/F:corr_pT:eta:phi:Rt:Et:sumtrackpT:sumtowerEt:detEta:dR:y:area:ueDensity:numtracks/I:numtowers:eventId:geoFlagJP1:geoFlagJP2:geoFlagAdj"); 
+  inclujetTree->Branch("jets_particle",&jets_particle,"pT/F:corr_pT:eta:phi:Rt:Et:sumtrackpT:sumtowerEt:detEta:dR:y:area:ueDensity:numtracks/I:numtowers:eventId:geoFlagJP1:geoFlagJP2:geoFlagAdj"); 
   inclujetTree->Branch("event",&event,"flagAJP/I:flagJP1:flagJP2:eventId:verz/F:partonpT:x1:x2:prescaleJP1:prescaleJP2:prescaleAJP");
   inclujetTree->Branch("event_particle",&event_particle,"flagAJP/I:flagJP1:flagJP2:eventId:verz/F:partonpT:x1:x2:prescaleJP1:prescaleJP2:prescaleAJP"); 
 
@@ -141,6 +148,9 @@ Int_t StInclusiveJetMaker::Make(){
   jets.phi = 100;
   jets.Rt = 0;
   jets.Et = -1;
+  jets.area = -1;
+  jets.ueDensity = -1;
+  jets.corr_pT = -1;
   jets.sumtrackpT = -1;
   jets.sumtowerEt = -1;
   jets.detEta = -100;
@@ -171,6 +181,7 @@ Int_t StInclusiveJetMaker::Make(){
   jets_particle.phi = 100;
   jets_particle.Rt = 0;
   jets_particle.Et = -1;
+  jets_particle.area = -1;
   jets_particle.sumtrackpT = -1;
   jets_particle.sumtowerEt = -1;
   jets_particle.detEta = -100;
@@ -195,6 +206,7 @@ Int_t StInclusiveJetMaker::Make(){
     if(!jetEvent) return kStOK;
     if(!skimEvent) return kStOK;
     // Enforce event synchronization
+    cout <<  jetEvent->eventId() << " "  << ueEvent_transM->eventId() << " " << ueEvent_transP->eventId() << " Checking theses numbers match" <<  endl;
     assert(jetEvent->runId() == skimEvent->runId() && jetEvent->eventId() == skimEvent->eventId());   
     event.eventId = jetEvent->eventId();
     
@@ -300,6 +312,9 @@ Int_t StInclusiveJetMaker::Make(){
 	    jets.eta = jethold->eta();
 	    jets.phi = jethold->phi();
 	    jets.y = 0.5*TMath::Log( (jethold->E() + jethold->pz()) / (jethold->E() - jethold->pz()) );
+	    jets.area = jethold->area();
+	    jets.ueDensity = (ueEvent_transM->sumPt() + ueEvent_transP->sumPt())/regionUEarea;
+	    jets.corr_pT = jets.pT - (jets.ueDensity * jets.area);
 	    jets.Rt = jethold->rt();
 	    jets.Et = jethold->E()/cosh(jethold->eta());
 	    jets.sumtrackpT = jethold->sumTrackPt();
@@ -348,6 +363,7 @@ Int_t StInclusiveJetMaker::Make(){
 		  jets_particle.phi = pjet->phi();
 		  jets_particle.y = 0.5*TMath::Log( (pjet->E() + pjet->pz()) / (pjet->E() - pjet->pz()) );
 		  jets_particle.Rt = pjet->rt();
+		  jets_particle.area = pjet->area();
 		  jets_particle.Et = pjet->E()/cosh(pjet->eta());
 		  jets_particle.sumtrackpT = pjet->sumTrackPt();
 		  jets_particle.sumtowerEt = pjet->sumTowerPt();
