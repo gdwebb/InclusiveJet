@@ -73,11 +73,6 @@ class StInclusiveJetMaker : public StMaker {
   map<int,int> barrelJetPatches;
   map<int,int> barrelJetPatches2;
   map<int,int> barrelJetPatches0;
-  /* struct Dijet{ */
-
-  /*   StJetCandidate *jet3, *jet4; */
-
-  /* } dijet, pdijet; */
 
   struct protoDijet {
     

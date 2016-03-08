@@ -65,31 +65,13 @@
 
 ClassImp(StInclusiveJetMaker)
 
-//_____________________________________________________________________________
-/// TLA constructor
-/*!
-  const char *name -  the name of this constructor
-  The first comment lines after the opening bracket
-  ({) of a member function are considered as a member function description 
-  See <A HREF="http://root.cern.ch/root/Documentation.html"> ROOT HTML documentation </A>
 
- */
 StInclusiveJetMaker::StInclusiveJetMaker(const char *name, const char *jetBranchname, TChain* jetChain, TChain *skimChain, TChain *ueChain, int isEmbed, int isPythia, const char* outputname):StMaker(name), mjetChain(jetChain), mskimChain(skimChain), mUeChain(ueChain), mjetname(jetBranchname), mIsEmbed(isEmbed), mIsPythia(isPythia){
     myDijetfile = TString(outputname);
 }
 
 
-//_____________________________________________________________________________
-/// This is TLA destructor
-/*!
-  The first comment lines after the opening bracket
-  ({) of a member function are considered as a member function description 
-  
-  The first comment lines after the opening bracket
-  ({) of a member function are considered as a member function description 
-  see: <A HREF="http://root.cern.ch/root/Documentation.html"> ROOT HTML documentation </A> 
 
- */
 StInclusiveJetMaker::~StInclusiveJetMaker(){
   //
 }
@@ -114,8 +96,6 @@ Int_t StInclusiveJetMaker::Init(){
     mskimChain->SetBranchAddress("skimEventBranch", &skimEvent);
     mUeChain->SetBranchAddress("transM_AntiKtR060NHits12", &ueEvent_transM);
     mUeChain->SetBranchAddress("transP_AntiKtR060NHits12", &ueEvent_transP);
-    cout << "CHECK! " <<endl; 
-    cout << "mUeChain: " << mUeChain->GetEntries() << " mjetChain:" << mjetChain->GetEntries() ;
     
     if(mIsEmbed == 1){ 
       mjetChain->SetBranchAddress("AntiKtR060Particle",&pjetEvent);
@@ -126,6 +106,8 @@ Int_t StInclusiveJetMaker::Init(){
   }
   else{
     mjetChain->SetBranchAddress("AntiKtR060Particle", &jetEvent); 
+    mUeChain->SetBranchAddress("transM_AntiKtR060Particle", &ueEvent_transM);
+    mUeChain->SetBranchAddress("transP_AntiKtR060Particle", &ueEvent_transP);
   }
   inclujetTree = new TTree(Form("Inclujets_%s",mjetname),Form("Inclujets_%s",mjetname));
   inclujetTree->Branch("jets",&jets,"pT/F:corr_pT:eta:phi:Rt:Et:sumtrackpT:sumtowerEt:detEta:dR:y:area:ueDensity:numtracks/I:numtowers:eventId:geoFlagJP1:geoFlagJP2:geoFlagAdj"); 
@@ -251,16 +233,11 @@ Int_t StInclusiveJetMaker::Make(){
     }
     
     vertex = jetEvent->vertex(0);
-    // cout << "number of verties:" << jetEvent->numberOfVertices() << endl;
-    // for(int i = 0; i < jetEvent->numberOfVertices(); i++){
 
-    //   cout << "vertex " << i << " rank: " << vertex->ranking() << endl;
-    // }
     if (!vertex) return kStOK;
     if (mIsEmbed == 1){ pvertex = pjetEvent->vertex();}
     
     if(vertex->ranking() < 0.0 ) return kStOK;
-    //    if(vertex->numberOfJets() < 2) return kStOK; // Require at least 2 jets in each event
     event.verz = vertex->position().Z();    
     if (mIsEmbed == 1){ event_particle.verz = pvertex->position().Z();}
     
@@ -308,13 +285,12 @@ Int_t StInclusiveJetMaker::Make(){
 	  
 	  
 	  //---------Geometric Trigger/ Matching to a JP----------
-	    if (matchedToJetPatch(jethold,barrelJetPatches)){jets.geoFlagJP1 = 1;}
-	    if (matchedToJetPatch(jethold,barrelJetPatches2)){jets.geoFlagJP2 = 1;}
-	    //  if (matchedToAdjacentJetPatch(jethold,barrelJetPatches0)){jets.geoFlagAdj = 1;}
-
-	    // ----------------------------------------------------
-	 
-	    jets.pT = jethold->pt();
+	  if (matchedToJetPatch(jethold,barrelJetPatches)){jets.geoFlagJP1 = 1;}
+	  if (matchedToJetPatch(jethold,barrelJetPatches2)){jets.geoFlagJP2 = 1;}
+	  
+	  // ----------------------------------------------------
+	  
+	  jets.pT = jethold->pt();
 	    jets.eta = jethold->eta();
 	    jets.phi = jethold->phi();
 	    jets.y = 0.5*TMath::Log( (jethold->E() + jethold->pz()) / (jethold->E() - jethold->pz()) );
@@ -352,17 +328,13 @@ Int_t StInclusiveJetMaker::Make(){
 
 	 
 	    if (mIsEmbed == 1){
-	      cout << "The number of the jets" << pvertex->numberOfJets() <<  endl;
 	      R_min3 = 1000;
 	      for(int jJet = 0; jJet < pvertex->numberOfJets(); jJet++){
-		cout << "jJet " << jJet << endl;
-		pjet = pvertex->jet(jJet); 
-		
+	
+		pjet = pvertex->jet(jJet); 	
 		diffR3 = diffParticleDetector(jethold,pjet);
-		cout << "dR 3: "  << R_min3 << endl; 
 		if(R_min3 >  diffR3) {
 		  R_min3 =  diffR3;
-		  // cout << "dR 3 in loop: "  << R_min3 << endl; 
 		  jets_particle.dR = R_min3;
 		  jets_particle.pT = pjet->pt(); 
 		  jets_particle.eta = pjet->eta() ;
@@ -370,7 +342,7 @@ Int_t StInclusiveJetMaker::Make(){
 		  jets_particle.y = 0.5*TMath::Log( (pjet->E() + pjet->pz()) / (pjet->E() - pjet->pz()) );
 		  jets_particle.Rt = pjet->rt();
 		  jets_particle.area = pjet->area();
-		  jets_particle.ueDensity = (pueEvent_transM->sumPt() + pueEvent_transP->sumPt())/regionUEarea;
+		  jets_particle.ueDensity = (pueEvent_transM->sumParticlePt() + pueEvent_transP->sumParticlePt())/regionUEarea;
 		  jets_particle.corr_pT = jets_particle.pT - (jets_particle.ueDensity * jets_particle.area);
 		  jets_particle.Et = pjet->E()/cosh(pjet->eta());
 		  jets_particle.sumtrackpT = pjet->sumTrackPt();
@@ -401,11 +373,7 @@ Int_t StInclusiveJetMaker::Make(){
     vertex = jetEvent->vertex();
     if (!vertex) return kStOK;   
       
-    // if(vertex->ranking() < 0.0 ) return kStOK;   
-    //    if(vertex->numberOfJets() < 2) return kStOK; // Require at least 2 jets in each event
-    event.verz = vertex->position().Z();    
-    //    if (mIsEmbed == 1){ event_particle.verz = pvertex->position().Z();}
-        
+    event.verz = vertex->position().Z();            
     event.flagAJP = 1; event.flagJP2 = 1; event.flagJP1 = 1;
     
 
@@ -420,30 +388,27 @@ Int_t StInclusiveJetMaker::Make(){
       {
 	for(int iJet = 0; iJet < numEntries; iJet++){
 	  
-	  //  	    jethold = (StJetCandidate*) jetArray->At(0);
 	  jethold = (StJetCandidate*) jetArray->At(iJet);
 	  
 	  jet_y = 0.5*TMath::Log( (jethold->E() + jethold->pz()) / (jethold->E() - jethold->pz()) );
-
-	    
 	 
-  	    jets.pT = jethold->pt();
-  	    jets.eta = jethold->eta();
-  	    jets.phi = jethold->phi();
-  	    jets.y = 0.5*TMath::Log( (jethold->E() + jethold->pz()) / (jethold->E() - jethold->pz()) );
-  	    jets.Rt = jethold->rt();
-	    jets.area = jethold->area();
-	    jets.ueDensity = (ueEvent_transM->sumPt() + ueEvent_transP->sumPt())/regionUEarea;
-	    jets.corr_pT = jets.pT - (jets.ueDensity * jets.area);
-  	    jets.Et = jethold->E()/cosh(jethold->eta());
-  	    jets.sumtrackpT = jethold->sumTrackPt();
-  	    jets.sumtowerEt = jethold->sumTowerPt();
-  	    jets.detEta = jethold->detEta();
-  	    jets.numtracks = jethold->numberOfTracks();
-  	    jets.numtowers = jethold->numberOfTowers();
-	    
-	    
-  	    inclujetTree->Fill(); 
+	  jets.pT = jethold->pt();
+	  jets.eta = jethold->eta();
+	  jets.phi = jethold->phi();
+	  jets.y = 0.5*TMath::Log( (jethold->E() + jethold->pz()) / (jethold->E() - jethold->pz()) );
+	  jets.Rt = jethold->rt();
+	  jets.area = jethold->area();
+	  jets.ueDensity = (ueEvent_transM->sumParticlePt() + ueEvent_transP->sumParticlePt())/regionUEarea;
+	  jets.corr_pT = jets.pT - (jets.ueDensity * jets.area);
+	  jets.Et = jethold->E()/cosh(jethold->eta());
+	  jets.sumtrackpT = jethold->sumTrackPt();
+	  jets.sumtowerEt = jethold->sumTowerPt();
+	  jets.detEta = jethold->detEta();
+	  jets.numtracks = jethold->numberOfTracks();
+	  jets.numtowers = jethold->numberOfTowers();
+	  
+	  
+	  inclujetTree->Fill(); 
 	}
       }
   }
@@ -519,338 +484,6 @@ Bool_t StInclusiveJetMaker:: matchedToJetPatch(const StJetCandidate* jethold,
   return false;
 }
 
-// Bool_t StInclusiveJetMaker:: matchedToAdjacentJetPatch(const StJetCandidate* jethold,
-// 		       const map<int,int>& barrelJetPatches){
-//   //  cout << "Size: " << barrelJetPatches.size() <<endl;
-//   const int num = 18;
-//   int jpID[num] = {99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99};
-//   int i= 0;
-//   Double_t aveEta, avePhi = 0;
-//   for (map<int,int>::const_iterator it = barrelJetPatches.begin(); it != barrelJetPatches.end(); ++it) {
-//     int id = it->first;
-//     int adc = it->second;
-//     jpID[i] = id; 
-//     i++;
-//   }
-//   if( CheckAdjacent(jpID,barrelJetPatches.size(),aveEta,avePhi, jethold)== true) return true;
-//    else{
-//     return false;
-//   }
-// }
-// Bool_t StInclusiveJetMaker::CheckAdjacent(Int_t jpID[], Int_t num, Double_t aveEta, Double_t avePhi, const StJetCandidate* jethold2)
-// {
-//   //cout << "jethold2 eta :  " << jethold2->detEta() << " phi: " << jethold2->phi() <<   endl;
-//   float eta1, phi1 = 0;
-//   float eta2, phi2 = 0;
-//   for(int i =0; i<num; i++) // loop through array of JP ids that are above thr
-//     {
-//       //cout << "jpID: " << jpID[i] << endl;
-//       for(int j = 0; j < num; j++){ // loop to compare elements within the array
-// 	if(jpID[i] > 0 && jpID[i] < 5){ // JPs  1-4
-// 	  if(jpID[j]== jpID[i]+6){
-// 	    if(StJetCandidate::getBarrelJetPatchEtaPhi(jpID[i],eta1,phi1) &&(StJetCandidate::getBarrelJetPatchEtaPhi(jpID[j],eta2,phi2))){ 
-// 	      aveEta  = (eta1+ eta2) / 2.0 ;
-// 	      phi1 = TVector2::Phi_0_2pi(phi1); // convert from 0 to 2pi
-// 	      phi2 = TVector2::Phi_0_2pi(phi2); 
-// 	      avePhi = TVector2::Phi_mpi_pi((phi1 + phi2) / 2.0); // convert back to -pi to pi
-// 	      //cout << "<eta>: " <<  aveEta << "<phi>: " << avePhi << endl;
-// 	      float deta = jethold2->detEta() - aveEta;
-// 	      float dphi = TVector2::Phi_mpi_pi(jethold2->phi() - avePhi);
-// 	      //cout << "deta: " << deta <<"dphi: " << dphi << endl;
-// 	      if (fabs(deta) < 0.6 && fabs(dphi) < 0.6) return true;
-// 	    }	    
-// 	  }
-// 	  if(jpID[j]==jpID[i]+12){
-// 	    if(StJetCandidate::getBarrelJetPatchEtaPhi(jpID[i],eta1,phi1) &&(StJetCandidate::getBarrelJetPatchEtaPhi(jpID[j],eta2,phi2))){ 
-// 	      aveEta  = (eta1+ eta2) / 2.0 ;
-// 	      phi1 = TVector2::Phi_0_2pi(phi1); // convert from 0 to 2pi
-// 	      phi2 = TVector2::Phi_0_2pi(phi2); 
-// 	      avePhi = TVector2::Phi_mpi_pi((phi1 + phi2) / 2.0);
-// 	      //cout << "<eta>: " <<  aveEta << "<phi>: " << avePhi << endl;
-// 	      float deta = jethold2->detEta() - aveEta;
-// 	      float dphi = TVector2::Phi_mpi_pi(jethold2->phi() - avePhi);
-// 	      //cout << "deta: " << deta <<"dphi: " << dphi << endl;
-// 	      if (fabs(deta) < 0.6 && fabs(dphi) < 0.6) return true;
-// 	    }
-// 	  }
-// 	  if(jpID[j]==jpID[i]+1){
-// 	    if(StJetCandidate::getBarrelJetPatchEtaPhi(jpID[i],eta1,phi1) &&(StJetCandidate::getBarrelJetPatchEtaPhi(jpID[j],eta2,phi2))){ 
-// 	      aveEta  = (eta1+ eta2) / 2.0 ;
-// 	      phi1 = TVector2::Phi_0_2pi(phi1); // convert from 0 to 2pi
-// 	      phi2 = TVector2::Phi_0_2pi(phi2); 
-// 	      avePhi = TVector2::Phi_mpi_pi((phi1 + phi2) / 2.0);
-// 	      //cout << "<eta>: " <<  aveEta << "<phi>: " << avePhi << endl;
-// 	    }
-// 	  }
-// 	  if(jpID[j]==jpID[i]-1){
-// 	    if(StJetCandidate::getBarrelJetPatchEtaPhi(jpID[i],eta1,phi1) &&(StJetCandidate::getBarrelJetPatchEtaPhi(jpID[j],eta2,phi2))){ 
-// 	      aveEta  = (eta1+ eta2) / 2.0 ;
-// 	      phi1 = TVector2::Phi_0_2pi(phi1); // convert from 0 to 2pi
-// 	      phi2 = TVector2::Phi_0_2pi(phi2); 
-// 	      avePhi = TVector2::Phi_mpi_pi((phi1 + phi2) / 2.0);
-// 	      //cout << "<eta>: " <<  aveEta << "<phi>: " << avePhi << endl;
-// 	      float deta = jethold2->detEta() - aveEta;
-// 	      float dphi = TVector2::Phi_mpi_pi(jethold2->phi() - avePhi);
-// 	      //cout << "deta: " << deta <<"dphi: " << dphi << endl;
-// 	      if (fabs(deta) < 0.6 && fabs(dphi) < 0.6) return true;
-// 	    }
-// 	  }
-// 	}
-// 	if(jpID[i] > 6 && jpID[i] < 11){ // JPs  7-10
-// 	  if(jpID[j]== jpID[i]+6){
-// 	    if(StJetCandidate::getBarrelJetPatchEtaPhi(jpID[i],eta1,phi1) &&(StJetCandidate::getBarrelJetPatchEtaPhi(jpID[j],eta2,phi2))){ 
-// 	      aveEta  = (eta1+ eta2) / 2.0 ;
-// 	      phi1 = TVector2::Phi_0_2pi(phi1); // convert from 0 to 2pi
-// 	      phi2 = TVector2::Phi_0_2pi(phi2); 
-// 	      avePhi = TVector2::Phi_mpi_pi((phi1 + phi2) / 2.0);
-// 	      //cout << "<eta>: " <<  aveEta << "<phi>: " << avePhi << endl;
-// 	      float deta = jethold2->detEta() - aveEta;
-// 	      float dphi = TVector2::Phi_mpi_pi(jethold2->phi() - avePhi);
-// 	      //cout << "deta: " << deta <<"dphi: " << dphi << endl;
-// 	      if (fabs(deta) < 0.6 && fabs(dphi) < 0.6) return true;
-// 	    }
-// 	  }
-// 	  if(jpID[j]==jpID[i]-6){
-// 	    if(StJetCandidate::getBarrelJetPatchEtaPhi(jpID[i],eta1,phi1) &&(StJetCandidate::getBarrelJetPatchEtaPhi(jpID[j],eta2,phi2))){ 
-// 	      aveEta  = (eta1+ eta2) / 2.0 ;
-// 	      phi1 = TVector2::Phi_0_2pi(phi1); // convert from 0 to 2pi
-// 	      phi2 = TVector2::Phi_0_2pi(phi2); 
-// 	      avePhi = TVector2::Phi_mpi_pi((phi1 + phi2) / 2.0);
-// 	      //cout << "<eta>: " <<  aveEta << "<phi>: " << avePhi << endl;
-// 	      float deta = jethold2->detEta() - aveEta;
-// 	      float dphi = TVector2::Phi_mpi_pi(jethold2->phi() - avePhi);
-// 	      //cout << "deta: " << deta <<"dphi: " << dphi << endl;
-// 	      if (fabs(deta) < 0.6 && fabs(dphi) < 0.6) return true;
-// 	    }
-// 	  }
-// 	  if(jpID[j]==jpID[i]+1){
-// 	    if(StJetCandidate::getBarrelJetPatchEtaPhi(jpID[i],eta1,phi1) &&(StJetCandidate::getBarrelJetPatchEtaPhi(jpID[j],eta2,phi2))){ 
-// 	      aveEta  = (eta1+ eta2) / 2.0 ;
-// 	      phi1 = TVector2::Phi_0_2pi(phi1); // convert from 0 to 2pi
-// 	      phi2 = TVector2::Phi_0_2pi(phi2); 
-// 	      avePhi = TVector2::Phi_mpi_pi((phi1 + phi2) / 2.0);
-// 	      //cout << "<eta>: " <<  aveEta << "<phi>: " << avePhi << endl;
-// 	      float deta = jethold2->detEta() - aveEta;
-// 	      float dphi = TVector2::Phi_mpi_pi(jethold2->phi() - avePhi);
-// 	      //cout << "deta: " << deta <<"dphi: " << dphi << endl;
-// 	      if (fabs(deta) < 0.6 && fabs(dphi) < 0.6) return true;
-// 	    }
-// 	  }
-// 	  if(jpID[j]==jpID[i]-1){
-// 	    if(StJetCandidate::getBarrelJetPatchEtaPhi(jpID[i],eta1,phi1) &&(StJetCandidate::getBarrelJetPatchEtaPhi(jpID[j],eta2,phi2))){ 
-// 	      aveEta  = (eta1+ eta2) / 2.0 ;
-// 	      phi1 = TVector2::Phi_0_2pi(phi1); // convert from 0 to 2pi
-// 	      phi2 = TVector2::Phi_0_2pi(phi2); 
-// 	      avePhi = TVector2::Phi_mpi_pi((phi1 + phi2) / 2.0);
-// 	      //cout << "<eta>: " <<  aveEta << "<phi>: " << avePhi << endl;
-// 	      float deta = jethold2->detEta() - aveEta;
-// 	      float dphi = TVector2::Phi_mpi_pi(jethold2->phi() - avePhi);
-// 	      //cout << "deta: " << deta <<"dphi: " << dphi << endl;
-// 	      if (fabs(deta) < 0.6 && fabs(dphi) < 0.6) return true;
-// 	    }
-// 	  }
-// 	}
-// 	if(jpID[i] > 12  && jpID[i] < 17){ // JPs  13-16
-// 	  if(jpID[j]== jpID[i]-6){
-// 	    if(StJetCandidate::getBarrelJetPatchEtaPhi(jpID[i],eta1,phi1) &&(StJetCandidate::getBarrelJetPatchEtaPhi(jpID[j],eta2,phi2))){ 
-// 	      aveEta  = (eta1+ eta2) / 2.0 ;
-// 	      phi1 = TVector2::Phi_0_2pi(phi1); // convert from 0 to 2pi
-// 	      phi2 = TVector2::Phi_0_2pi(phi2); 
-// 	      avePhi = TVector2::Phi_mpi_pi((phi1 + phi2) / 2.0);
-// 	      //cout << "<eta>: " <<  aveEta << "<phi>: " << avePhi << endl;
-// 	      float deta = jethold2->detEta() - aveEta;
-// 	      float dphi = TVector2::Phi_mpi_pi(jethold2->phi() - avePhi);
-// 	      //cout << "deta: " << deta <<"dphi: " << dphi << endl;
-// 	      if (fabs(deta) < 0.6 && fabs(dphi) < 0.6) return true;
-// 	    }
-// 	  }
-// 	  if(jpID[j]==jpID[i]-12){
-// 	    if(StJetCandidate::getBarrelJetPatchEtaPhi(jpID[i],eta1,phi1) &&(StJetCandidate::getBarrelJetPatchEtaPhi(jpID[j],eta2,phi2))){ 
-// 	      aveEta  = (eta1+ eta2) / 2.0 ;
-// 	      phi1 = TVector2::Phi_0_2pi(phi1); // convert from 0 to 2pi
-// 	      phi2 = TVector2::Phi_0_2pi(phi2); 
-// 	      avePhi = TVector2::Phi_mpi_pi((phi1 + phi2) / 2.0);
-// 	      //cout << "<eta>: " <<  aveEta << "<phi>: " << avePhi << endl;
-// 	      float deta = jethold2->detEta() - aveEta;
-// 	      float dphi = TVector2::Phi_mpi_pi(jethold2->phi() - avePhi);
-// 	      //cout << "deta: " << deta <<"dphi: " << dphi << endl;
-// 	      if (fabs(deta) < 0.6 && fabs(dphi) < 0.6) return true;
-// 	    }
-// 	  }
-// 	  if(jpID[j]==jpID[i]+1){
-// 	    if(StJetCandidate::getBarrelJetPatchEtaPhi(jpID[i],eta1,phi1) &&(StJetCandidate::getBarrelJetPatchEtaPhi(jpID[j],eta2,phi2))){ 
-// 	      aveEta  = (eta1+ eta2) / 2.0 ;
-// 	      phi1 = TVector2::Phi_0_2pi(phi1); // convert from 0 to 2pi
-// 	      phi2 = TVector2::Phi_0_2pi(phi2); 
-// 	      avePhi = TVector2::Phi_mpi_pi((phi1 + phi2) / 2.0);
-// 	      //cout << "<eta>: " <<  aveEta << "<phi>: " << avePhi << endl;
-// 	      float deta = jethold2->detEta() - aveEta;
-// 	      float dphi = TVector2::Phi_mpi_pi(jethold2->phi() - avePhi);
-// 	      //cout << "deta: " << deta <<"dphi: " << dphi << endl;
-// 	      if (fabs(deta) < 0.6 && fabs(dphi) < 0.6) return true;
-// 	    }
-// 	  }
-// 	  if(jpID[j]==jpID[i]-1){
-// 	    if(StJetCandidate::getBarrelJetPatchEtaPhi(jpID[i],eta1,phi1) &&(StJetCandidate::getBarrelJetPatchEtaPhi(jpID[j],eta2,phi2))){ 
-// 	      aveEta  = (eta1+ eta2) / 2.0 ;
-// 	      phi1 = TVector2::Phi_0_2pi(phi1); // convert from 0 to 2pi
-// 	      phi2 = TVector2::Phi_0_2pi(phi2); 
-// 	      avePhi = TVector2::Phi_mpi_pi((phi1 + phi2) / 2.0);
-// 	      //cout << "<eta>: " <<  aveEta << "<phi>: " << avePhi << endl;
-// 	      float deta = jethold2->detEta() - aveEta;
-// 	      float dphi = TVector2::Phi_mpi_pi(jethold2->phi() - avePhi);
-// 	      //cout << "deta: " << deta <<"dphi: " << dphi << endl;
-// 	      if (fabs(deta) < 0.6 && fabs(dphi) < 0.6) return true;
-// 	    }
-// 	  }
-// 	}
-//       }
-//       if(jpID[i] == 0){
-// 	for(int j = 0; j < num; j++){ // loop to compare elements within the array
-// 	  if(jpID[j] == 6){
-// 	    if(StJetCandidate::getBarrelJetPatchEtaPhi(jpID[i],eta1,phi1) &&(StJetCandidate::getBarrelJetPatchEtaPhi(jpID[j],eta2,phi2))){ 
-// 	    aveEta  = (eta1+ eta2) / 2.0 ;
-// 	    phi1 = TVector2::Phi_0_2pi(phi1); // convert from 0 to 2pi
-// 	    phi2 = TVector2::Phi_0_2pi(phi2); 
-// 	    avePhi = TVector2::Phi_mpi_pi((phi1 + phi2) / 2.0);
-// 	    //cout << "<eta>: " <<  aveEta << "<phi>: " << avePhi << endl;
-// 	    float deta = jethold2->detEta() - aveEta;
-// 	    float dphi = TVector2::Phi_mpi_pi(jethold2->phi() - avePhi);
-// 	    //cout << "deta: " << deta <<"dphi: " << dphi << endl;
-// 	    if (fabs(deta) < 0.6 && fabs(dphi) < 0.6) return true;
-// 	    }
-// 	  }
-// 	  if(jpID[j] == 12){
-// 	    if(StJetCandidate::getBarrelJetPatchEtaPhi(jpID[i],eta1,phi1) &&(StJetCandidate::getBarrelJetPatchEtaPhi(jpID[j],eta2,phi2))){ 
-// 	      aveEta  = (eta1+ eta2) / 2.0 ;
-// 	      phi1 = TVector2::Phi_0_2pi(phi1); // convert from 0 to 2pi
-// 	      phi2 = TVector2::Phi_0_2pi(phi2); 
-// 	      avePhi = TVector2::Phi_mpi_pi((phi1 + phi2) / 2.0);
-// 	      //cout << "<eta>: " <<  aveEta << "<phi>: " << avePhi << endl;
-// 	      float deta = jethold2->detEta() - aveEta;
-// 	      float dphi = TVector2::Phi_mpi_pi(jethold2->phi() - avePhi);
-// 	      //cout << "deta: " << deta <<"dphi: " << dphi << endl;
-// 	      if (fabs(deta) < 0.6 && fabs(dphi) < 0.6) return true;
-// 	    }
-// 	  } 
-// 	  if(jpID[j] == 5){ 
-// 	    if(StJetCandidate::getBarrelJetPatchEtaPhi(jpID[i],eta1,phi1) &&(StJetCandidate::getBarrelJetPatchEtaPhi(jpID[j],eta2,phi2))){ 
-// 	      aveEta  = (eta1+ eta2) / 2.0 ;
-// 	      phi1 = TVector2::Phi_0_2pi(phi1); // convert from 0 to 2pi
-// 	      phi2 = TVector2::Phi_0_2pi(phi2); 
-// 	      avePhi = TVector2::Phi_mpi_pi((phi1 + phi2) / 2.0);
-// 	      //cout << "<eta>: " <<  aveEta << "<phi>: " << avePhi << endl;
-// 	      float deta = jethold2->detEta() - aveEta;
-// 	      float dphi = TVector2::Phi_mpi_pi(jethold2->phi() - avePhi);
-// 	      //cout << "deta: " << deta <<"dphi: " << dphi << endl;
-// 	      if (fabs(deta) < 0.6 && fabs(dphi) < 0.6) return true;
-// 	    }
-// 	  }	
-// 	}// end of id ==0 
-// 	if(jpID[i] == 5){
-// 	for(int j = 0; j < num; j++){ // loop to compare elements within the array
-// 	  if(jpID[j] == 5){
-// 	 if(StJetCandidate::getBarrelJetPatchEtaPhi(jpID[i],eta1,phi1) &&(StJetCandidate::getBarrelJetPatchEtaPhi(jpID[j],eta2,phi2))){  
-// 	    aveEta  = (eta1+ eta2) / 2.0 ;
-// 	    avePhi = TVector2::Phi_mpi_pi((phi1 + phi2) / 2.0);
-// 	    phi1 = TVector2::Phi_0_2pi(phi1); // convert from 0 to 2pi
-// 	    phi2 = TVector2::Phi_0_2pi(phi2); 
-// 	    //cout << "<eta>: " <<  aveEta << "<phi>: " << avePhi << endl;
-// 	    float deta = jethold2->detEta() - aveEta;
-// 	    float dphi = TVector2::Phi_mpi_pi(jethold2->phi() - avePhi);
-// 	    //cout << "deta: " << deta <<"dphi: " << dphi << endl;
-// 	    if (fabs(deta) < 0.6 && fabs(dphi) < 0.6) return true;
-// 	  }
-// 	  if(jpID[j] == 17){
-	  
-// 	    aveEta  = (eta1+ eta2) / 2.0 ;
-// 	    phi1 = TVector2::Phi_0_2pi(phi1); // convert from 0 to 2pi
-// 	    phi2 = TVector2::Phi_0_2pi(phi2); 
-// 	    avePhi = TVector2::Phi_mpi_pi((phi1 + phi2) / 2.0);
-// 	    //cout << "<eta>: " <<  aveEta << "<phi>: " << avePhi << endl;
-// 	    float deta = jethold2->detEta() - aveEta;
-// 	    float dphi = TVector2::Phi_mpi_pi(jethold2->phi() - avePhi);
-// 	    //cout << "deta: " << deta <<"dphi: " << dphi << endl;
-// 	    if (fabs(deta) < 0.6 && fabs(dphi) < 0.6) return true;
-// 	  } 	
-// 	}
-//       }// end of id == 5
-//       if(jpID[i] == 6){
-// 	for(int j = 0; j < num; j++){ // loop to compare elements within the array
-// 	  if(jpID[j] == 11){
-// 	    if(StJetCandidate::getBarrelJetPatchEtaPhi(jpID[i],eta1,phi1) &&(StJetCandidate::getBarrelJetPatchEtaPhi(jpID[j],eta2,phi2))){ 
-// 	      aveEta  = (eta1+ eta2) / 2.0 ;
-// 	      phi1 = TVector2::Phi_0_2pi(phi1); // convert from 0 to 2pi
-// 	      phi2 = TVector2::Phi_0_2pi(phi2); 
-// 	      avePhi = TVector2::Phi_mpi_pi((phi1 + phi2) / 2.0);
-// 	      //cout << "<eta>: " <<  aveEta << "<phi>: " << avePhi << endl;
-// 	      float deta = jethold2->detEta() - aveEta;
-// 	      float dphi = TVector2::Phi_mpi_pi(jethold2->phi() - avePhi);
-// 	    //cout << "deta: " << deta <<"dphi: " << dphi << endl;
-// 	      if (fabs(deta) < 0.6 && fabs(dphi) < 0.6) return true;
-// 	    }
-// 	  }
-	 
-// 	if(jpID[j] == 12){ 
-// 	  if(StJetCandidate::getBarrelJetPatchEtaPhi(jpID[i],eta1,phi1) &&(StJetCandidate::getBarrelJetPatchEtaPhi(jpID[j],eta2,phi2))){ 
-// 	  aveEta  = (eta1+ eta2) / 2.0 ;
-// 	  phi1 = TVector2::Phi_0_2pi(phi1); // convert from 0 to 2pi
-// 	  phi2 = TVector2::Phi_0_2pi(phi2); 
-// 	  avePhi = TVector2::Phi_mpi_pi((phi1 + phi2) / 2.0);
-// 	  //cout << "<eta>: " <<  aveEta << "<phi>: " << avePhi << endl;
-// 	  float deta = jethold2->detEta() - aveEta;
-// 	  float dphi = TVector2::Phi_mpi_pi(jethold2->phi() - avePhi);
-// 	  //cout << "deta: " << deta <<"dphi: " << dphi << endl;
-// 	  if (fabs(deta) < 0.6 && fabs(dphi) < 0.6) return true;
-// 	  }
-// 	}	
-// 	}
-//       }// end of id == 6 
-      
-//       if(jpID[i] == 11){
-// 	for(int j = 0; j < num; j++){ // loop to compare elements within the array
-// 	  if(jpID[j] == 17){
-// 	    if(StJetCandidate::getBarrelJetPatchEtaPhi(jpID[i],eta1,phi1) &&(StJetCandidate::getBarrelJetPatchEtaPhi(jpID[j],eta2,phi2))){ 
-// 	      //cout << "phi1: " << phi1 << "phi2: " << phi2 << endl;
-// 	      //cout << "eta1: " << eta1 << "eta2: " << eta2 << endl;
-// 	      aveEta  = (eta1+ eta2) / 2.0 ;
-// 	      phi1 = TVector2::Phi_0_2pi(phi1); // convert from 0 to 2pi
-// 	      phi2 = TVector2::Phi_0_2pi(phi2); 
-// 	      avePhi = TVector2::Phi_mpi_pi(( phi1 +phi2) / 2);
-// 	      //cout << "<eta>: " <<  aveEta << "<phi>: " << avePhi << endl;
-// 	      float deta = jethold2->detEta() - aveEta;
-// 	      float dphi = TVector2::Phi_mpi_pi(jethold2->phi() - avePhi);
-// 	      //cout << "deta: " << deta <<"dphi: " << dphi << endl;
-// 	      if (fabs(deta) < 0.6 && fabs(dphi) < 0.6) return true;
-// 	    }
-// 	  } 	  
-// 	}
-//       }// end of id ==11 
-//       if(jpID[i] == 12){
-// 	for(int j = 0; j < num; j++){ // loop to compare elements within the array
-// 	  if(jpID[j] == 17){ 
-// 	    if(StJetCandidate::getBarrelJetPatchEtaPhi(jpID[i],eta1,phi1) &&(StJetCandidate::getBarrelJetPatchEtaPhi(jpID[j],eta2,phi2))){ 
-// 	      aveEta  = (eta1+ eta2) / 2.0 ;
-// 	      phi1 = TVector2::Phi_0_2pi(phi1); // convert from 0 to 2pi
-// 	      phi2 = TVector2::Phi_0_2pi(phi2); 
-// 	      avePhi = TVector2::Phi_mpi_pi((phi1 + phi2) / 2.0);
-// 	      //cout << "<eta>: " <<  aveEta << "<phi>: " << avePhi << endl;
-// 	      float deta = jethold2->detEta() - aveEta;
-// 	      float dphi = TVector2::Phi_mpi_pi(jethold2->phi() - avePhi);
-// 	      //cout << "deta: " << deta <<"dphi: " << dphi << endl;
-// 	      if (fabs(deta) < 0.6 && fabs(dphi) < 0.6) return true;
-// 	    }
-// 	  }	
-// 	}
-//       }// end of id ==12
-//       if(jpID[i] == 17){
-// 	//cout << "Should have been determine " << endl; 
-//       } 
-      
-//     }
-//   return false;
-//   //cout << "testing" << endl;
-// }
 
 
 
