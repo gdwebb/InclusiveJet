@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<job minFilesPerProcess="5" maxFilesPerProcess="10" filesPerHour="1" fileListSyntax="xrootd" simulateSubmission="false">
+  <command>
+    stardev
+    root4star -q -b RunInclusiveJetCode.C\(1e9,\"/gpfs01/star/i_bnl/gdwebb/Run9/500GeVJets/Data/&runnumber;/st_physics_\*.jets.root\"\,\"/gpfs01/star/i_bnl/gdwebb/Run9/500GeVJets/Data/&runnumber;/st_physics_\*.skim.root\"\,\"/gpfs01/star/i_bnl/gdwebb/Run9/500GeVJets/Data/&runnumber;/st_physics_\*.ue.root\"\,\"$SCRATCH/inclujetAna_&runnumber;.inclujets.root\",0,0\) &gt; &amp; inclu_jet_&runnumber;.log
+  </command>  
+  <SandBox installer="ZIP">
+    <Package name="inclusiveJetAnalysis">
+      <File>file:/star/u/gdwebb/InclusiveJet/macros/RunInclusiveJetCode.C</File>
+      <File>file:/star/u/gdwebb/InclusiveJet/.sl64_gcc482</File>
+    </Package>
+  </SandBox>
+  <stdout URL="file:/gpfs01/star/pwg/gdwebb/Run9pp500/InclusiveJetAnalysis/R060/log/jetrun&runnumber;.log"/>
+  <stderr URL="file:/gpfs01/star/pwg/gdwebb/Run9pp500/InclusiveJetAnalysis/R060/err/jetrun&runnumber;.err"/>
+  <output fromScratch="*.root" toURL="file:/gpfs01/star/pwg/gdwebb/Run9pp500/InclusiveJetAnalysis/R060/" />
+  <output fromScratch="inclu_jet*.log" toURL="file:/gpfs01/star/pwg/gdwebb/Run9pp500/InclusiveJetAnalysis/R060/log/" />
+</job>
+
