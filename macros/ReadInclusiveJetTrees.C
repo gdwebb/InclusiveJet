@@ -77,8 +77,8 @@ void ReadInclusiveJetTrees(
   jetchain.SetBranchAddress("jets",&jets); 
   jetchain.SetBranchAddress("event",&event);
   
-  trackchain.SetBranchAddress("jettracks",&jettracks);
-  trackchain.SetBranchAddress("jettowers",&jettowers);
+  //  trackchain.SetBranchAddress("jettracks",&jettracks);
+  //  trackchain.SetBranchAddress("jettowers",&jettowers);
  
   // Create Data histograms 
   
@@ -187,7 +187,7 @@ void ReadInclusiveJetTrees(
    
    
     hjetpt_bfCut->Fill(jets.pT);
-    hjet_corrpt_bfCut->Fill(jets.corrpT);
+    hjet_corrpt_bfCut->Fill(jets.corr_pT);
     hjeteta_bfCut->Fill(jets.eta);
     hjety_bfCut->Fill(jets.y);
     hjetphi_bfCut->Fill(jets.phi);
@@ -264,7 +264,7 @@ void ReadInclusiveJetTrees(
 	hprescaleJP2->Fill(event.prescaleJP2);
 
 	hjetptJP2->Fill(jets.pT);
-	hjet_corrptJP2->Fill(jets.corrpT);
+	hjet_corrptJP2->Fill(jets.corr_pT);
 	hjetetaJP2->Fill(jets.eta);
 	hjetyJP2->Fill(jets.y);
 	hjetphiJP2->Fill(jets.phi);
@@ -304,27 +304,25 @@ void ReadInclusiveJetTrees(
       }
     }
    
-    // Loop over track Chain
-    for (int j =0; j <  trackchain.GetEntries(); j++){
-      trackchain.GetEvent(j);
+    // // Loop over track Chain
+    // for (int j =0; j <  trackchain.GetEntries(); j++){
+    //   trackchain.GetEvent(j);
       
-      if(jets.eventId == jettracks.eventId && jets.pT == jettracks.jetpT){
-	cout << "track jet pT: " << jettracks.jetpT <<  "jets pT " <<  jets.pT<< endl;
-	test ++;
-	hjetTrackpt->Fill(jettracks.pt);
-      }  
-    } // End of Loop over tracks
+    //   if(jets.eventId == jettracks.eventId && jets.pT == jettracks.jetpT){
+    // 	cout << "track jet pT: " << jettracks.jetpT <<  "jets pT " <<  jets.pT<< endl;
+    // 	hjetTrackpt->Fill(jettracks.pt);
+    //   }  
+    // } // End of Loop over tracks
     
-    // Loop over tower Chain
-    for (int j =0; j <  towerchain.GetEntries(); j++){
-      towerchain.GetEvent(j);
+    // // Loop over tower Chain
+    // for (int j =0; j <  towerchain.GetEntries(); j++){
+    //   towerchain.GetEvent(j);
       
-      if(jets.eventId == jettowers.eventId && jets.pT == jettowers.jetpT){
-	cout << "tower jet pT: " << jettowers.jetpT <<  "jets energy" <<  jets.energy<< endl;
-	test ++;
-	hjetTrackpt->Fill(jettracks.pt);
-      }  
-    } // End of Loop over tower
+    //   if(jets.eventId == jettowers.eventId && jets.pT == jettowers.jetpT){
+    // 	cout << "tower jet pT: " << jettowers.jetpT <<  "jets energy" <<  jets.energy<< endl;
+    // 	hjetTrackpt->Fill(jettracks.pt);
+    //   }  
+    // } // End of Loop over tower
     //---------Filling the After Cuts Histograms----------
 
     
@@ -332,7 +330,7 @@ void ReadInclusiveJetTrees(
     // cout << "jetpTawaysideAJP: " << jetpTawaySideJP1 << endl;
    
     hjetpt_afCut->Fill(jets.pT);
-    hjet_corrpt_afCut->Fill(jets.corrpT);
+    hjet_corrpt_afCut->Fill(jets.corr_pT);
     hjeteta_afCut->Fill(jets.eta);
     hjety_afCut->Fill(jets.y);
     hjetphi_afCut->Fill(jets.phi);
