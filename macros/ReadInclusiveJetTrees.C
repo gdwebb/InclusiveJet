@@ -36,12 +36,8 @@ char filename[nfip];
 static const Int_t npTbins = 13; // jet pT 18% resolutions
 const Double_t npTbins0[npTbins+1] = {10.0,11.8,13.9,16.4,19.4,22.9,27.0,31.9,37.6,44.4,52.3,61.8,72.9,86.0};
 
-//static const Int_t npTbins = 25;
-//const Double_t npTbins0[npTbins+1] = {10.0,10.9,11.8,12.8,14.0,15.2,16.5,17.9,19.5,21.2,23.0,25.0,27.2,29.2,32.1,34.9,38.0,41.3,44.9,48.8,53.0,57.6,62.6,68.1,74.0,80.4};
 
-void ReadInclusiveJetTrees(
-			   //const char* infile = "/gpfs01/star/i_uky/gdwebb/InclusiveJetAnalysis/500GeV/R060/InclusivejetTrees/inclujetAna_10103041.inclujets.root",
-			   const char* infile = "/star/u/gdwebb/InclusiveJet/test500GeVjets10103041data.root",
+void ReadInclusiveJetTrees(const char* infile = "/star/u/gdwebb/InclusiveJet/test500GeVjets10103041data.root",
 			   const char* outname = "testInclusive500GeVjets10103041.root"){
   
   struct protoDijet {
