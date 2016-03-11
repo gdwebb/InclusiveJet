@@ -15,4 +15,3 @@
   <output fromScratch="*.root" toURL="file:/gpfs01/star/pwg/gdwebb/Run9pp500/InclusiveJetAnalysis/R060/" />
   <output fromScratch="inclu_jet*.log" toURL="file:/gpfs01/star/pwg/gdwebb/Run9pp500/InclusiveJetAnalysis/R060/log/" />
 </job>
-
