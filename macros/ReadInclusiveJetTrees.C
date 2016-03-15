@@ -141,6 +141,7 @@ void ReadInclusiveJetTrees(const char* infile = "/star/u/gdwebb/InclusiveJet/tes
    
   TH1F* hjetptJP2 = new TH1F("hjetptJP2","hjetptJP2",npTbins,npTbins0);
   TH1F* hjet_corrptJP2 = new TH1F("hjet_corrptJP2","hjet_corrptJP2",npTbins,npTbins0);
+  TH2F* hjetpt_jetcorrptJP2 = new TH2F("hjetpt_jetcorrptJP2","hjetpt_jetcorrptJP2",npTbins,npTbins0,npTbins,npTbins0);
   TH1F* hjetetaJP2 = new TH1F("hjetetaJP2","hjetetaJP2",66,-1.5,1.5);
   TH1F* hjetyJP2 = new TH1F("hjetyJP2","hjetyJP2",66,-1.5,1.5);
   TH1F* hjetphiJP2 = new TH1F("hjetphiJP2","hjetphiJP2",120,-3.14159,3.14159);
@@ -271,6 +272,7 @@ void ReadInclusiveJetTrees(const char* infile = "/star/u/gdwebb/InclusiveJet/tes
 	hjetsumTowerEtJP2->Fill(jets.sumtowerEt);
 	hVerZJP2->Fill(event.verz);
 	heta_yvspTJP2->Fill(jets.pT,jets.y - jets.eta);	
+	hjetpt_jetcorrptJP2->Fill(jets.pT,jets.corr_pT);
 
    
 
